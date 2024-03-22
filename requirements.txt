@@ -1,0 +1,6 @@
+Django
+djangorestframework
+tensorflow
+lazypredict
+django-cors-headers
+djangorestframework-simplejwt
