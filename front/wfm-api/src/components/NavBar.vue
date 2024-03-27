@@ -1,24 +1,22 @@
 <template>
     <nav>
-        <h1>WFM API</h1>
+        <h1 @click="refreshPage">WFM API</h1>
         <button class="btn-logout" @click="logout">
-            <!-- <LogoutIcon/> -->
             logout
         </button>
     </nav>
 </template>
 
 <script>
-import LogoutIcon from './icons/LogoutIcon.vue'
 
 export default {
-    components:{
-        LogoutIcon
-    },
     methods: {
         logout() {
         localStorage.removeItem('jwt');
         this.$router.push({ name: 'Login' }); 
+        },
+        refreshPage() {
+            window.location.reload();
         }
     }
 };
@@ -36,7 +34,8 @@ export default {
 
     h1 {
         margin: 0; 
-        font-size: 1.5rem; 
+        font-size: 1.5rem;
+        cursor: pointer;
     }
 
     .btn-logout {

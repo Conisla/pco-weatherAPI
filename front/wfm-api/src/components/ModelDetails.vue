@@ -1,8 +1,22 @@
 <template>
   <div class="model-details">
-    <h2>{{ model.name }}</h2>
-    <p class="model-date">{{ formatDate(model.createdat) }}</p>
-    <p>{{ extractMetrics(model.metrics) }} %</p>
+    <div class="header">
+      <h2>{{ model.name }}</h2>
+      <p class="model-date">{{ formatDate(model.createdat) }}</p>
+      <div class="metrics">{{ extractMetrics(model.metrics) }} %</div>
+    </div>
+    <div class="features tile">
+      <h4>Features</h4>
+      {{ model.features }}
+    </div>
+    <div class="target tile">
+      <h4>Target</h4>
+      {{ model.target }}
+    </div>
+    <div class="parameters tile">
+      <h4>Parameters</h4>
+      {{ model.parameters }}
+    </div>
   </div>
 </template>
 
@@ -37,3 +51,43 @@ export default {
   }
 };
 </script>
+
+<style>
+.model-details {
+  display: flex;
+  flex-direction: row;
+  margin: auto;
+  border-radius: 8px;
+}
+
+.header {
+  color: #fff;
+  padding: 20px;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+.model-details h2 {
+  margin-top: 0;
+}
+
+.model-date {
+  font-size: 0.9rem;
+}
+
+.tile {
+  margin: 10px;
+  padding: 15px;
+  border-radius: 8px;
+
+}
+
+.metrics, .features, .target, .parameters {
+  display: block;
+  clear: both;
+}
+
+.tile:not(:last-child) {
+  margin-bottom: 10px;
+}
+</style>

@@ -1,8 +1,11 @@
 import csv
 import os
 import json
-
 import pandas as pd
+from .ml_utils import *
+from sklearn.model_selection import train_test_split
+from lazypredict.Supervised import LazyClassifier, LazyRegressor
+
 from django.shortcuts import render
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponseBadRequest
@@ -26,10 +29,6 @@ from .serializers import ModelSerializer
 
 from .models import Model, Prediction
 from .forms import TrainModelForm
-
-from .ml_utils import *
-
-from sklearn.model_selection import train_test_split
 
 from rest_framework import viewsets
 
@@ -140,5 +139,72 @@ def predict(request, model_id):
         return JsonResponse({'predictions':pred_data_dict})
     except Model.DoesNotExist:
         return JsonResponse({'error': 'Modèle non trouvé.'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def automl(request):
+    try:
+        # Lecture du fichier CSV
+        csv_file = request.FILES['file']
+        list_features = request.POST.get('features')
+        list_features = list_features.split(',')
+        target_column = request.POST.get('target')
+        datetime_key = request.POST.get('datetime_key')
+        model_list = request.POST.get('models_list')
+        model_list = model_list.split(',')
+
+        df = pd.read_csv(csv_file)
+        print('csv loaded')
+
+        X = df[list_features]
+        
+        y = df[target_column]
+        
+        # Division des données
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=False)
+        
+    
+        # Détermination du type de problème (classification ou régression)
+        if set(y.unique()) == {0, 1}:
+            clf = LazyClassifier(verbose=0, ignore_warnings=True, custom_metric=None, predictions=True)
+            models, predictions = clf.fit(X_train, X_test, y_train, y_test)
+        else:
+            clf = LazyRegressor(verbose=0, ignore_warnings=True, custom_metric=None, predictions=True)
+            models, predictions = clf.fit(X_train, X_test, y_train, y_test)
+
+        df_test = df.loc[:int(df.shape[0] * 0.2)]
+        df_test[datetime_key] = pd.to_datetime(df_test[datetime_key])
+        df_test_sorted = df_test.sort_values(by=datetime_key)
+        
+        print('passed : df_test creation')
+        models_perf = {}
+        print('passed : models_perf creation')
+
+        best_models = models[:3].index.to_list()
+
+        for model in best_models : 
+            print(model)
+            df_test_sorted[model] = predictions[model].values
+            models_perf[model] = get_rrmse(df_test_sorted,target_column,model)
+            print('passed : ', model)
+
+        for model_id in model_list:
+            model_instance = Model.objects.get(id=model_id, user=request.user)
+            model = load_keras_model(model_instance.path)
+            pred_array = model.predict(x=X_test)
+            df_test_sorted[model_instance.name] = pred_array
+            models_perf[model_instance.name] = get_rrmse(df_test_sorted,target_column,model_instance.name)
+            print('passed : ', model_instance.name)
+
+        print(type(models_perf))
+        print(type(df_test_sorted.to_dict()))
+
+        return JsonResponse({
+            'message': 'AutoML completed successfully',
+            'models_performance': models_perf,
+            'predictions': df_test_sorted.to_dict(orient='records'),
+            }, status=200)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

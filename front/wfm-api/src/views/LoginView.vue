@@ -30,6 +30,7 @@ export default {
           password: this.password
         });
         localStorage.setItem('jwt', response.data.access);
+        localStorage.setItem('jwt_refresh', response.data.refresh);
         this.$router.replace({ name: 'Home' });
       } catch (error) {
         console.error(error);

@@ -5,7 +5,7 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
-from forecasts.views import train_model, predict
+from forecasts.views import train_model, predict, automl
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -13,6 +13,7 @@ urlpatterns = [
     path('login/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('train_model/', train_model, name='train_model'),
     path('predict/<int:model_id>/', predict, name='predict'),
-    path('api/', include('forecasts.urls'))
+    path('api/', include('forecasts.urls')),
+    path('automl/', automl, name='automl'),
 
 ]

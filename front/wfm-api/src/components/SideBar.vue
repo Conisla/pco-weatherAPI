@@ -18,6 +18,8 @@
             <ModelCard v-for="model in models" :key="model.name" :model="model" @click="selectModel(model)" />
             <div class="after-blur"></div>
         </div>
+        <button class="automl-btn" @click="$emit('open-automl-form')">AUTOML</button>
+
     </div>
 </template>
 
@@ -25,12 +27,14 @@
 import axios from 'axios';
 import ModelCard from './ModelCard.vue'
 import TrainForm from './TrainForm.vue';
+import AutomlForm from './AutomlForm.vue';
 
 export default {
     name:'SideBar',
     components:{
         ModelCard,
         TrainForm,
+        AutomlForm
     },
     data() {
     return {
@@ -180,5 +184,12 @@ export default {
     color: black;
     text-decoration: none;
     cursor: pointer;
+  }
+  .automl-btn{
+    align-self: center;
+    margin-right: 10%;
+    line-height: 0;
+    width: 50%;
+    height: 5%;
   }
 </style>

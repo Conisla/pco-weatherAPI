@@ -5,6 +5,7 @@ import math
 from keras.models import load_model
 import numpy as np
 
+
 def create_linreg_model(shape, output_nb):
     # Définir le modèle de régression linéaire
     model = keras.Sequential([

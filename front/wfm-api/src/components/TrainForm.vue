@@ -5,11 +5,26 @@
       <form @submit.prevent="submitForm">
         <input type="file" @change="handleFileUpload" accept=".csv">
         
-        <div class="table-container">
-          <table v-if="csvHeaders.length > 0">
+        <div class="table-container" v-if="csvHeaders.length > 0">
+
+          <!-- Datetime Column -->
+          <label for="datetime_key">Colonne datetime</label>
+          <select id="datetime_key" v-model="datetime_key">
+            <option value="">None</option>
+            <option v-for="(header, index) in csvHeaders" :key="`header-${index}`">
+              {{ header }}
+            </option>
+          </select>
+
+          <!-- Features & Target -->
+          <table>
             <thead>
               <tr>
-                <th v-for="(header, index) in csvHeaders" :key="`header-${index}`">
+                <th 
+                v-for="(header, index) in filteredHeaders"
+                :key="`header-${index}`"
+                v-if="header !== datetime_key"
+                >
                   {{ header }}
                   <input type="radio" name="target" :value="header" v-model="target">
                   <input type="checkbox" :value="header" v-model="selectedFeatures">
@@ -17,8 +32,8 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(row, rowIndex) in csvPreviewData" :key="`row-${rowIndex}`">
-                <td v-for="(cell, cellIndex) in row" :key="`cell-${cellIndex}`">{{ cell }}</td>
+              <tr v-for="(row, rowIndex) in filteredPreviewData" :key="`row-${rowIndex}`">
+                <td v-for="(cell, cellIndex) in row" :key="`cell-${cellIndex}`" v-if="csvHeaders[cellIndex] !== datetime_key">{{ cell }}</td>
               </tr>
             </tbody>
           </table>
@@ -38,7 +53,10 @@
           <!-- Nb Episode -->
           <label for="epochs">Number epochs:</label>
           <input id="epochs" type="number" v-model.number="epochs" placeholder="Epochs">
-          <button type="submit">Train Model</button>
+          <button type="submit" :disabled="isRequesting">
+            <span v-if="isRequesting">Chargement...</span>
+            <span v-else>Train Model</span>
+          </button>
         </div>
       </form>
 
@@ -59,6 +77,8 @@
     export default {
       data() {
         return {
+          isRequesting: false,
+          datetime_key:'',
           csvData: [],
           csvHeaders: [],
           csvPreviewData: [],
@@ -164,7 +184,6 @@
 
           Plotly.newPlot(this.$refs.plotContainer, data, layout);
         },
-
         handleFileUpload(event) {
           this.file = event.target.files[0];
           Papa.parse(this.file, {
@@ -180,6 +199,7 @@
           });
         },
         submitForm() {
+          this.isRequesting = true;
           const formData = new FormData();
           formData.append('csv_file', this.file);
           formData.append('features', this.selectedFeatures);
@@ -197,12 +217,14 @@
             },
           })
           .then(response => {
-            // Traitez la réponse ici
             console.log(response.data);
             this.trainResponse = response.data;
           })
           .catch(error => {
             console.error("Error:", error);
+          })
+          .finally(() => {
+            this.isRequesting = false;
           });
         },
       },
@@ -212,6 +234,19 @@
             this.drawPlot();
           }
         });
+      },
+      computed: {
+        filteredHeaders() {
+          return this.csvHeaders.filter(header => header !== this.datetime_key);
+        },
+        filteredPreviewData() {
+          if (!this.datetime_key) return this.csvPreviewData;
+          const datetimeIndex = this.csvHeaders.indexOf(this.datetime_key);
+          return this.csvPreviewData.map(row =>{
+            const filteredEntries = Object.entries(row).filter(([key, _]) => key !== this.datetime_key);
+            return Object.fromEntries(filteredEntries);
+        });
+        }
       },
       watch: {
         trainResponse(newVal, oldVal) {
@@ -232,26 +267,26 @@
     }
 
     .table-container {
-      overflow-x: auto; /* Permet le défilement horizontal si le tableau déborde */
-      max-width: 100%; /* Adapte la largeur max du conteneur à celle de son parent */
+      overflow-x: auto; 
+      max-width: 100%; 
     }
     
     table {
-      width: 100%; /* S'assure que le tableau prend toute la largeur du conteneur */
+      width: 100%;
     }
   
     .table-container table {
-      transform-origin: top left; /* Assure que le tableau est réduit en gardant le coin supérieur gauche fixe */
+      transform-origin: top left;
     }
     
-    /* Ou vous pouvez réduire la taille de la police et les dimensions des cellules comme ceci */
+
     .table-container table {
-      font-size: 0.75rem; /* Ajuste la taille de la police à votre convenance */
+      font-size: 0.75rem;
     }
     
     .table-container th,
     .table-container td {
-      padding: 0.25em; /* Réduit l'espacement à l'intérieur des cellules */
+      padding: 0.25em;
     }
 
     input{
